@@ -6,7 +6,7 @@ go 1.23
 
 require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.51
-	github.com/go-sql-driver/mysql v1.8.1
+	github.com/go-sql-driver/mysql v1.9.0
 )
 
 require (
