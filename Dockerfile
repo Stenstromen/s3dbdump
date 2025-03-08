@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine as build
+FROM golang:1.24-alpine as build
 WORKDIR /app
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /s3dbdump ./
