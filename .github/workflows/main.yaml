@@ -5,6 +5,12 @@ on:
   release:
     types: [created]
 
+permissions:
+  contents: write
+  packages: write
+  issues: read
+  pull-requests: read
+
 env:
   IMAGE_NAME: s3dbdump
 
