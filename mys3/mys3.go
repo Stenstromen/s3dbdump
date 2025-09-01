@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -137,6 +138,10 @@ func KeepOnlyNBackups(keepBackups string) error {
 		dbBackups[dbName] = append(dbBackups[dbName], obj)
 	}
 
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var deleteErrors []error
+
 	for dbName, backups := range dbBackups {
 		sort.Slice(backups, func(i, j int) bool {
 			return backups[i].LastModified.After(*backups[j].LastModified)
@@ -144,17 +149,32 @@ func KeepOnlyNBackups(keepBackups string) error {
 
 		if len(backups) > keepBackupsInt {
 			objectsToDelete := backups[keepBackupsInt:]
-			for _, obj := range objectsToDelete {
-				_, err := s3Client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
-					Bucket: aws.String(os.Getenv("S3_BUCKET")),
-					Key:    obj.Key,
-				})
-				if err != nil {
-					return fmt.Errorf("unable to delete object %q: %w", *obj.Key, err)
+
+			// Use the new WaitGroup.Go method for cleaner goroutine management
+			wg.Go(func() {
+				for _, obj := range objectsToDelete {
+					_, err := s3Client.DeleteObject(context.TODO(), &s3.DeleteObjectInput{
+						Bucket: aws.String(os.Getenv("S3_BUCKET")),
+						Key:    obj.Key,
+					})
+					if err != nil {
+						mu.Lock()
+						deleteErrors = append(deleteErrors, fmt.Errorf("unable to delete object %q: %w", *obj.Key, err))
+						mu.Unlock()
+					} else {
+						log.Printf("Deleted old backup for database %s: %s", dbName, *obj.Key)
+					}
 				}
-				log.Printf("Deleted old backup for database %s: %s", dbName, *obj.Key)
-			}
+			})
 		}
+	}
+
+	// Wait for all deletion operations to complete
+	wg.Wait()
+
+	// Return the first error if any occurred
+	if len(deleteErrors) > 0 {
+		return deleteErrors[0]
 	}
 
 	dumpDir := os.Getenv("DB_DUMP_PATH")

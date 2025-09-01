@@ -2,7 +2,7 @@ module github.com/stenstromen/s3dbdump
 
 replace github.com/stenstromen/s3dbdump => ./
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.71
