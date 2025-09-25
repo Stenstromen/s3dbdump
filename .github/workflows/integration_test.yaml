@@ -1,18 +1,8 @@
 ---
-name: s3dbdump CI
+name: Integration Test
 
 on:
-  release:
-    types: [created]
-
-permissions:
-  contents: write
-  packages: write
-  issues: read
-  pull-requests: read
-
-env:
-  IMAGE_NAME: s3dbdump
+  workflow_dispatch:
 
 jobs:
   integration-test:
@@ -33,7 +23,7 @@ jobs:
           - 9000:9000
         env:
           MINIO_ACCESS_KEY: minio
-          MINIO_SECRET_KEY: minio123
+          MINIO_SECRET_KEY: minio123    
     steps:
       - uses: actions/checkout@v5
 
@@ -133,72 +123,3 @@ jobs:
             echo "❌ Integration test failed: No backups found in MinIO bucket"
             exit 1
           fi
-  build:
-    name: Build and Push
-    needs: [integration-test]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to ghcr.io
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          push: true
-          tags: |
-            ghcr.io/stenstromen/${{ env.IMAGE_NAME }}:latest
-            ghcr.io/stenstromen/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
-
-  flux-update:
-    needs: [build, integration-test]
-    runs-on: ubuntu-latest
-    env:
-      VERSIONTAG: ${{ github.event.release.tag_name }}
-    steps:
-      - name: Checkout flux repository
-        uses: actions/checkout@v5
-        with:
-          repository: stenstromen/flux
-          token: ${{ secrets.KUBE_GITHUB_TOKEN }}
-          path: flux-repo
-          fetch-depth: 0
-
-      - name: Fetch repository content
-        run: |
-          cd flux-repo
-          git fetch origin
-          git checkout main
-
-      - name: Update CronJob image tag
-        run: |
-          CRONJOB_FILE="flux-repo/cronjobs/stinky/mariadb-backup-s3.yaml"
-          OLD_IMAGE=$(grep "image:" "$CRONJOB_FILE" | awk '{print $2}')
-          NEW_IMAGE="ghcr.io/stenstromen/s3dbdump:$VERSIONTAG"
-
-          # Update the image tag
-          sed -i "s|image:.*|image: $NEW_IMAGE|" "$CRONJOB_FILE"
-
-          # Create commit message
-          echo "Update image: $OLD_IMAGE -> $NEW_IMAGE" > commit_message.txt
-
-      - name: Commit and Push Flux CronJob Update
-        run: |
-          cd flux-repo
-          git config --local user.email "actions@github.com"
-          git config --local user.name "GitHub Actions"
-          git add cronjobs/stinky/mariadb-backup-s3.yaml
-          git commit -F ../commit_message.txt
-          git push
