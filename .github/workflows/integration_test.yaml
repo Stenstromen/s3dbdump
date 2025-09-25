@@ -93,6 +93,7 @@ jobs:
       - name: Create temporary volume
         run: |
           docker volume create s3dbdump-temp
+          docker run --rm -v s3dbdump-temp:/tmp alpine:latest chown -R 65534:65534 /tmp
 
       - name: Run s3dbdump
         run: |
