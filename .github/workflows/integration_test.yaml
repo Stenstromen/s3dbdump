@@ -4,6 +4,12 @@ name: Integration Test
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+  issues: read
+  pull-requests: read
+
 jobs:
   integration-test:
     runs-on: ubuntu-latest
