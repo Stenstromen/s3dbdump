@@ -31,7 +31,7 @@ jobs:
           MINIO_ACCESS_KEY: minio
           MINIO_SECRET_KEY: minio123    
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install MySQL client
         run: |
