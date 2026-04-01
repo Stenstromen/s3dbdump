@@ -1,7 +1,7 @@
 FROM golang:1.26-alpine AS build
 WORKDIR /app
 COPY . .
-RUN GOEXPERIMENT=greenteagc CGO_ENABLED=0 GOOS=linux go build -a -ldflags='-w -s' -installsuffix cgo -o /s3dbdump ./
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags='-w -s' -installsuffix cgo -o /s3dbdump ./
 
 FROM scratch
 COPY --from=build /s3dbdump /
