@@ -77,10 +77,10 @@ jobs:
             echo "Unsupported architecture: $ARCH"
             exit 1
           fi
-          curl $MC_URL \
+          curl -fL "$MC_URL" \
             --create-dirs \
-            -o $HOME/minio-binaries/mc && \
-            chmod +x $HOME/minio-binaries/mc
+            -o "$HOME/minio-binaries/mc" && \
+            chmod +x "$HOME/minio-binaries/mc"
 
       - name: Wait for MinIO
         run: |
