@@ -200,5 +200,16 @@ jobs:
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           git add cronjobs/stinky/mariadb-backup-s3.yaml
+          if git diff --cached --quiet; then
+            echo "Flux image tag is already ${VERSIONTAG}."
+            exit 0
+          fi
           git commit -F ../commit_message.txt
-          git push
+          if ! git push; then
+            git pull --rebase origin main
+            if git diff --quiet && git diff --cached --quiet; then
+              echo "Flux image tag is already ${VERSIONTAG}."
+              exit 0
+            fi
+            git push
+          fi

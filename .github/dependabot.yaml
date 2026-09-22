@@ -13,6 +13,9 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: ":arrow_up: upgrade:"
+    ignore:
+      # Compiled agentic workflow pins. Update them with gh aw compile.
+      - dependency-name: "github/gh-aw-actions/*"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
