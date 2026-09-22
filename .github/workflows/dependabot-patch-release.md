@@ -186,7 +186,13 @@ safe-outputs:
             echo "tag=$tag" >> "$GITHUB_OUTPUT"
             echo "prs=$normalized" >> "$GITHUB_OUTPUT"
 
-        - name: Merge Dependabot pull requests
+        - name: Set up Go
+          if: steps.gate.outputs.proceed == 'true'
+          uses: actions/setup-go@v7
+          with:
+            go-version: "1.26"
+
+        - name: Apply Dependabot updates
           if: steps.gate.outputs.proceed == 'true'
           env:
             PRS: ${{ steps.gate.outputs.prs }}
@@ -194,11 +200,57 @@ safe-outputs:
             set -euo pipefail
             git config --local user.email "actions@github.com"
             git config --local user.name "GitHub Actions"
+            declare -A best_version
             IFS=',' read -ra numbers <<< "$PRS"
             for number in "${numbers[@]}"; do
               git fetch origin "pull/${number}/head:pr-${number}"
-              git merge --no-edit "pr-${number}" -m "Merge Dependabot pull request #${number}"
+              while IFS= read -r path; do
+                case "$path" in
+                  go.mod|go.sum) ;;
+                  *)
+                    if ! git diff --quiet origin/main -- "$path"; then
+                      echo "Pull request #${number} changes ${path}, which another update already changed."
+                      exit 1
+                    fi
+                    git checkout "pr-${number}" -- "$path"
+                    ;;
+                esac
+              done < <(git diff --name-only origin/main "pr-${number}")
+
+              while IFS= read -r spec; do
+                module="${spec%% *}"
+                version="${spec#* }"
+                current="$(awk -v module="$module" '$1 == module && $2 ~ /^v[0-9]/ { print $2; exit }' <(git show origin/main:go.mod))"
+                chosen="$version"
+                if [ -n "${best_version[$module]+x}" ]; then
+                  chosen="$(printf '%s\n%s\n' "$version" "${best_version[$module]}" | sort -V | tail -n 1)"
+                fi
+                if [ -n "$current" ]; then
+                  newest="$(printf '%s\n%s\n' "$current" "$chosen" | sort -V | tail -n 1)"
+                  if [ "$newest" = "$current" ]; then
+                    continue
+                  fi
+                fi
+                best_version["$module"]="$chosen"
+              done < <(git diff origin/main "pr-${number}" -- go.mod | awk '
+                /^\+[^+]/ {
+                  sub(/^\+/, "")
+                  if ($0 ~ /\/\/ indirect/) next
+                  sub(/\/\/.*/, "")
+                  gsub(/^[[:space:]]+|[[:space:]]+$/, "")
+                  if ($2 ~ /^v[0-9]/) print $1, $2
+                }
+              ')
             done
+
+            if [ "${#best_version[@]}" -gt 0 ]; then
+              args=()
+              for module in "${!best_version[@]}"; do
+                args+=("${module}@${best_version[$module]}")
+              done
+              go get "${args[@]}"
+              go mod tidy
+            fi
 
             allowed_path() {
               case "$1" in
@@ -228,12 +280,8 @@ safe-outputs:
                 exit 1
               fi
             done <<< "$changed"
-
-        - name: Set up Go
-          if: steps.gate.outputs.proceed == 'true'
-          uses: actions/setup-go@v7
-          with:
-            go-version: "1.26"
+            git add -A
+            git commit -m "Apply Dependabot updates"
 
         - name: Run Go tests
           if: steps.gate.outputs.proceed == 'true'
@@ -345,7 +393,7 @@ safe-outputs:
             gh release create "$TAG" --target "$(git rev-parse HEAD)" --title "$TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
 
             for number in "${numbers[@]}"; do
-              gh pr comment "$number" --body "Included in patch release ${TAG}." || true
+              gh pr close "$number" --comment "Included in patch release ${TAG}." || true
             done
 
         - name: Wait for the release image
@@ -452,6 +500,6 @@ Call `create_patch_release` exactly once:
 - `tag`: the next patch tag
 - `pull_requests`: the selected pull request numbers, comma-separated, with no spaces
 
-The release job checks the tag and the pull requests again. It merges them onto `main`, runs `go test` for `./mydump`, `./mygzip`, and `./mys3`, then runs the integration test from `.github/workflows/integration_test.yaml`. It creates the GitHub release only when every test passes. After the release image is published, it sets the Flux cronjob image in `stenstromen/flux` at `cronjobs/stinky/mariadb-backup-s3.yaml` to `ghcr.io/stenstromen/s3dbdump:<tag>`. A failed test publishes nothing and does not update Flux.
+The release job checks the tag and the pull requests again. It applies those updates onto `main`. Go module pull requests are combined with `go get` so several `go.mod` bumps do not conflict. It runs `go test` for `./mydump`, `./mygzip`, and `./mys3`, then runs the integration test from `.github/workflows/integration_test.yaml`. It creates the GitHub release only when every test passes. After the release image is published, it sets the Flux cronjob image in `stenstromen/flux` at `cronjobs/stinky/mariadb-backup-s3.yaml` to `ghcr.io/stenstromen/s3dbdump:<tag>`. A failed test publishes nothing and does not update Flux.
 
 Do not call `noop` in the same run as `create_patch_release`.
