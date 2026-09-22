@@ -160,8 +160,11 @@ safe-outputs:
               draft="$(echo "$meta" | jq -r '.isDraft')"
               head_repo="$(echo "$meta" | jq -r '.headRepository.nameWithOwner')"
 
-              if [ "$author" != "dependabot[bot]" ] || [ "$base" != "main" ] || [ "$state" != "OPEN" ] || [ "$draft" != "false" ] || [ "$head_repo" != "$repo" ]; then
-                echo "Pull request #$number is not an open Dependabot pull request targeting main in $repo."
+              author_lc="$(printf '%s' "$author" | tr '[:upper:]' '[:lower:]')"
+              repo_lc="$(printf '%s' "$repo" | tr '[:upper:]' '[:lower:]')"
+              head_repo_lc="$(printf '%s' "$head_repo" | tr '[:upper:]' '[:lower:]')"
+              if { [ "$author_lc" != "dependabot[bot]" ] && [ "$author_lc" != "app/dependabot" ]; } || [ "$base" != "main" ] || [ "$state" != "OPEN" ] || [ "$draft" != "false" ] || [ "$head_repo_lc" != "$repo_lc" ]; then
+                echo "Pull request #$number is not an open Dependabot pull request targeting main in $repo (author=$author base=$base state=$state draft=$draft head=$head_repo)."
                 exit 1
               fi
 
@@ -430,7 +433,7 @@ Publish one patch release when several Dependabot updates are waiting. The relea
 
 List open pull requests in this repository. Keep a pull request only when all of the following are true:
 
-- The author is `dependabot[bot]`.
+- The author is `dependabot[bot]` or `app/dependabot`.
 - The base branch is `main`.
 - It is open and not a draft.
 - Every changed file is one of `go.mod`, `go.sum`, `Dockerfile`, `.github/dependabot.yaml`, `.github/dependabot.yml`, or a `.yml` or `.yaml` file under `.github/workflows/`.
