@@ -215,7 +215,7 @@ safe-outputs:
                     git checkout "pr-${number}" -- "$path"
                     ;;
                 esac
-              done < <(git diff --name-only origin/main "pr-${number}")
+              done < <(git diff --name-only "origin/main...pr-${number}")
 
               while IFS= read -r spec; do
                 module="${spec%% *}"
@@ -232,7 +232,7 @@ safe-outputs:
                   fi
                 fi
                 best_version["$module"]="$chosen"
-              done < <(git diff origin/main "pr-${number}" -- go.mod | awk '
+              done < <(git diff "origin/main...pr-${number}" -- go.mod | awk '
                 /^\+[^+]/ {
                   sub(/^\+/, "")
                   if ($0 ~ /\/\/ indirect/) next
