@@ -304,9 +304,11 @@ safe-outputs:
               mariadb:latest
             docker run -d --name s3dbdump-minio \
               -p 9000:9000 \
+              -e MINIO_ROOT_USER=minio \
+              -e MINIO_ROOT_PASSWORD=minio123 \
               -e MINIO_ACCESS_KEY=minio \
               -e MINIO_SECRET_KEY=minio123 \
-              minio/minio:edge-cicd
+              quay.io/minio/minio:latest-cicd
 
             DEBIAN_FRONTEND=noninteractive sudo apt-get update -qq
             DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -qq mysql-client
