@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Integration test: MariaDB and MinIO must already be listening on localhost.
-# MariaDB: 127.0.0.1:3306, user root, password testpass123.
-# MinIO:   127.0.0.1:9000, user minio, password minio123.
+# Integration test.
+# MariaDB must already be listening on 127.0.0.1:3306 (user root, password testpass123).
+# This script starts MinIO on 127.0.0.1:9000 (user minio, password minio123).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -45,8 +45,23 @@ curl -fL "$mc_url" -o "${HOME}/minio-binaries/mc"
 chmod +x "${HOME}/minio-binaries/mc"
 mc="${HOME}/minio-binaries/mc"
 
+# quay.io/minio/minio:latest-cicd defaults to the bare `minio` command, which
+# exits without opening a port. GitHub Actions service containers cannot pass
+# `server /data`, so start the server here.
+echo "Starting MinIO"
+docker run -d --name s3dbdump-minio --network host \
+  -e MINIO_ROOT_USER=minio \
+  -e MINIO_ROOT_PASSWORD=minio123 \
+  -e MINIO_ACCESS_KEY=minio \
+  -e MINIO_SECRET_KEY=minio123 \
+  quay.io/minio/minio:latest-cicd server /data
+
 echo "Waiting for MinIO"
-timeout 60 bash -c 'until curl -f http://127.0.0.1:9000/minio/health/live; do sleep 2; done'
+if ! timeout 60 bash -c 'until curl -sf http://127.0.0.1:9000/minio/health/live >/dev/null; do sleep 2; done'; then
+  echo "MinIO did not become ready"
+  docker logs s3dbdump-minio || true
+  exit 1
+fi
 echo "MinIO is ready"
 
 "$mc" alias set myminio http://127.0.0.1:9000 minio minio123
