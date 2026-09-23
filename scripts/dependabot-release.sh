@@ -13,12 +13,13 @@ usage() {
 
 latest_tag() {
   local tag
-  git tag -l 'v*' --sort=-v:refname | while read -r tag; do
+  while read -r tag; do
     if [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
       printf '%s\n' "$tag"
-      break
+      return 0
     fi
-  done
+  done < <(git tag -l 'v*' --sort=-v:refname)
+  return 0
 }
 
 read_open_prs() {
@@ -45,8 +46,11 @@ read_open_prs() {
   fi
   prs=()
   while IFS= read -r number; do
-    [[ -n "$number" ]] && prs+=("$number")
+    if [[ -n "$number" ]]; then
+      prs+=("$number")
+    fi
   done <<<"$text"
+  return 0
 }
 
 has_unreleased_dependabot() {
