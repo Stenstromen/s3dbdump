@@ -192,6 +192,8 @@ cmd_merge() {
     echo "Merged #${number}. No Dependabot pull requests remain, so the patch release can be created."
   else
     echo "Merged #${number}. ${#prs[@]} Dependabot pull request(s) still open."
+    echo "Starting the next run to test one more pull request."
+    gh workflow run dependabot-patch-release.yaml --repo "$repo" --ref main
   fi
 }
 
