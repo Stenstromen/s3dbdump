@@ -61,7 +61,7 @@ has_unreleased_dependabot() {
 }
 
 fetch_main() {
-  git fetch origin main --tags --force
+  git fetch origin main:refs/remotes/origin/main --tags --force
 }
 
 set_output() {
@@ -117,6 +117,10 @@ cmd_plan() {
     set_output pr ""
     echo "Waiting for at least ${minimum_prs} Dependabot pull requests (have ${#prs[@]})."
     return
+  fi
+
+  if [[ "$pending" -eq 1 && ${#prs[@]} -lt "$minimum_prs" ]]; then
+    echo "Release batch already started since ${latest}. ${#prs[@]} Dependabot pull request(s) still open."
   fi
 
   for number in "${prs[@]}"; do
