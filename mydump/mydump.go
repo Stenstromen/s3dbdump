@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/go-sql-driver/mysql"
 	"github.com/jamf/go-mysqldump"
@@ -168,31 +166,7 @@ func TestConnections() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	var cfg aws.Config
-	if endpoint := os.Getenv("S3_ENDPOINT"); endpoint != "" {
-		cfg, err = config.LoadDefaultConfig(ctx,
-			config.WithRegion("us-east-1"),
-			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
-				os.Getenv("AWS_ACCESS_KEY_ID"),
-				os.Getenv("AWS_SECRET_ACCESS_KEY"),
-				"",
-			)),
-			config.WithEndpointResolver(aws.EndpointResolverFunc(
-				func(service, region string) (aws.Endpoint, error) {
-					return aws.Endpoint{
-						PartitionID:       "aws",
-						URL:               endpoint,
-						SigningRegion:     "us-east-2",
-						HostnameImmutable: true,
-					}, nil
-				},
-			)),
-		)
-	} else {
-		cfg, err = config.LoadDefaultConfig(ctx,
-			config.WithRegion(os.Getenv("AWS_REGION")),
-		)
-	}
+	cfg, err := mys3.LoadConfig(ctx)
 	if err != nil {
 		log.Fatalf("Failed to load AWS config: %v", err)
 	}

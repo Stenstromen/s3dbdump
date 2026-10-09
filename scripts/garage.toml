@@ -1,5 +1,5 @@
 # Single-node Garage config for integration tests.
-# s3_region must match the region s3dbdump signs custom-endpoint requests with.
+# s3_region must match AWS_REGION. Tests leave AWS_REGION unset, which signs as us-east-2.
 metadata_dir = "/var/lib/garage/meta"
 data_dir = "/var/lib/garage/data"
 db_engine = "sqlite"

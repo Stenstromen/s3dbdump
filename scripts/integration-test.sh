@@ -70,6 +70,7 @@ docker run \
   -v s3dbdump-temp:/tmp \
   -e AWS_ACCESS_KEY_ID="$garage_access_key" \
   -e AWS_SECRET_ACCESS_KEY="$garage_secret_key" \
+  -e AWS_REGION="$garage_region" \
   -e S3_ENDPOINT='http://127.0.0.1:3900' \
   -e S3_BUCKET="$garage_bucket" \
   -e DB_HOST='127.0.0.1' \

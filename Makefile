@@ -90,6 +90,7 @@ test: build garage-deploy
 		-v $(TEMP_VOLUME):/tmp \
 		-e AWS_ACCESS_KEY_ID='$(GARAGE_ACCESS_KEY)' \
 		-e AWS_SECRET_ACCESS_KEY='$(GARAGE_SECRET_KEY)' \
+		-e AWS_REGION='$(GARAGE_REGION)' \
 		-e S3_ENDPOINT='http://$(GARAGE_CONTAINER):3900' \
 		-e S3_BUCKET='$(GARAGE_BUCKET)' \
 		-e DB_HOST='$(DB_CONTAINER)' \

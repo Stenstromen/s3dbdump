@@ -15,22 +15,27 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
-func UploadToS3(filename string) error {
-
-	if os.Getenv("S3_BUCKET") == "" {
-		return fmt.Errorf("S3_BUCKET is not set")
+// customEndpointRegion is the SigV4 scope used for S3_ENDPOINT.
+// Garage checks this against s3_region (its default is "garage").
+// An empty AWS_REGION keeps the previous us-east-2 scope.
+func customEndpointRegion() string {
+	if region := os.Getenv("AWS_REGION"); region != "" {
+		return region
 	}
+	return "us-east-2"
+}
 
-	var cfg aws.Config
-	var err error
-
+func LoadConfig(ctx context.Context) (aws.Config, error) {
 	if endpoint := os.Getenv("S3_ENDPOINT"); endpoint != "" {
-		cfg, err = config.LoadDefaultConfig(context.TODO(),
-			config.WithRegion("us-east-1"),
+		signingRegion := customEndpointRegion()
+		return config.LoadDefaultConfig(ctx,
+			config.WithRegion(signingRegion),
+			config.WithEC2IMDSClientEnableState(imds.ClientDisabled),
 			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
 				os.Getenv("AWS_ACCESS_KEY_ID"),
 				os.Getenv("AWS_SECRET_ACCESS_KEY"),
@@ -41,18 +46,26 @@ func UploadToS3(filename string) error {
 					return aws.Endpoint{
 						PartitionID:       "aws",
 						URL:               endpoint,
-						SigningRegion:     "us-east-2",
+						SigningRegion:     signingRegion,
 						HostnameImmutable: true,
 					}, nil
 				},
 			)),
 		)
-	} else {
-		cfg, err = config.LoadDefaultConfig(context.TODO(),
-			config.WithRegion(os.Getenv("AWS_REGION")),
-		)
 	}
 
+	return config.LoadDefaultConfig(ctx,
+		config.WithRegion(os.Getenv("AWS_REGION")),
+	)
+}
+
+func UploadToS3(filename string) error {
+
+	if os.Getenv("S3_BUCKET") == "" {
+		return fmt.Errorf("S3_BUCKET is not set")
+	}
+
+	cfg, err := LoadConfig(context.TODO())
 	if err != nil {
 		return fmt.Errorf("unable to load AWS SDK config: %w", err)
 	}
@@ -91,34 +104,7 @@ func KeepOnlyNBackups(keepBackups string) error {
 		return fmt.Errorf("invalid DB_DUMP_FILE_KEEP_DAYS value: %w", keepBackupsErr)
 	}
 
-	var cfg aws.Config
-	var err error
-
-	if endpoint := os.Getenv("S3_ENDPOINT"); endpoint != "" {
-		cfg, err = config.LoadDefaultConfig(context.TODO(),
-			config.WithRegion("us-east-1"),
-			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
-				os.Getenv("AWS_ACCESS_KEY_ID"),
-				os.Getenv("AWS_SECRET_ACCESS_KEY"),
-				"",
-			)),
-			config.WithEndpointResolver(aws.EndpointResolverFunc(
-				func(service, region string) (aws.Endpoint, error) {
-					return aws.Endpoint{
-						PartitionID:       "aws",
-						URL:               endpoint,
-						SigningRegion:     "us-east-2",
-						HostnameImmutable: true,
-					}, nil
-				},
-			)),
-		)
-	} else {
-		cfg, err = config.LoadDefaultConfig(context.TODO(),
-			config.WithRegion(os.Getenv("AWS_REGION")),
-		)
-	}
-
+	cfg, err := LoadConfig(context.TODO())
 	if err != nil {
 		return fmt.Errorf("unable to load AWS SDK config: %w", err)
 	}

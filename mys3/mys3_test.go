@@ -1,6 +1,7 @@
 package mys3
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,6 +11,13 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
+
+func TestMain(m *testing.M) {
+	// Unit tests are not running on EC2. Leave this unset and the SDK dials
+	// the instance metadata service at 169.254.169.254.
+	os.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+	os.Exit(m.Run())
+}
 
 // Helper function to set up test environment
 func setupTestEnv(envVars map[string]string) map[string]string {
@@ -33,6 +41,60 @@ func restoreTestEnv(originalValues map[string]string) {
 		} else {
 			os.Setenv(key, value)
 		}
+	}
+}
+
+func TestCustomEndpointRegion(t *testing.T) {
+	tests := []struct {
+		name     string
+		region   string
+		expected string
+	}{
+		{name: "uses AWS_REGION", region: "garage", expected: "garage"},
+		{name: "defaults when unset", region: "", expected: "us-east-2"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			original := setupTestEnv(map[string]string{"AWS_REGION": tt.region})
+			defer restoreTestEnv(original)
+
+			if got := customEndpointRegion(); got != tt.expected {
+				t.Errorf("customEndpointRegion() = %q, want %q", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestLoadConfigSigningRegion(t *testing.T) {
+	original := setupTestEnv(map[string]string{
+		"S3_ENDPOINT":           "http://127.0.0.1:3900",
+		"AWS_REGION":            "garage",
+		"AWS_ACCESS_KEY_ID":     "testkey",
+		"AWS_SECRET_ACCESS_KEY": "testsecret",
+	})
+	defer restoreTestEnv(original)
+
+	cfg, err := LoadConfig(context.Background())
+	if err != nil {
+		t.Fatalf("LoadConfig() error = %v", err)
+	}
+	if cfg.Region != "garage" {
+		t.Fatalf("region = %q, want garage", cfg.Region)
+	}
+	if cfg.EndpointResolver == nil {
+		t.Fatal("expected custom endpoint resolver")
+	}
+
+	endpoint, err := cfg.EndpointResolver.ResolveEndpoint("s3", cfg.Region)
+	if err != nil {
+		t.Fatalf("ResolveEndpoint() error = %v", err)
+	}
+	if endpoint.SigningRegion != "garage" {
+		t.Errorf("SigningRegion = %q, want garage", endpoint.SigningRegion)
+	}
+	if endpoint.URL != "http://127.0.0.1:3900" {
+		t.Errorf("URL = %q, want http://127.0.0.1:3900", endpoint.URL)
 	}
 }
 

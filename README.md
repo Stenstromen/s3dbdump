@@ -135,7 +135,7 @@ spec:
 | ------------------------ | -------- | ------------------------- | ----------------------------------- |
 | `AWS_ACCESS_KEY_ID`      | Yes      | -                         | AWS access key ID                   |
 | `AWS_SECRET_ACCESS_KEY`  | Yes      | -                         | AWS secret access key               |
-| `AWS_REGION`             | Yes      | -                         | AWS region                          |
+| `AWS_REGION`             | Yes      | `us-east-2` for custom endpoints | SigV4 region. With `S3_ENDPOINT`, this must match the server region (Garage’s default is `garage`) |
 | `S3_BUCKET`              | Yes      | -                         | S3 bucket name                      |
 | `S3_ENDPOINT`            | No       | -                         | Custom S3 endpoint (e.g. for MinIO) |
 | `DB_HOST`                | Yes      | -                         | Database host                       |
