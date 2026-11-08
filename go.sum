@@ -42,8 +42,8 @@ github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/go-sql-driver/mysql v1.10.1 h1:arlSnNLq6a5yxGxV7qg9lF4j0C+KwD6NbQyKr9QL6ME=
 github.com/go-sql-driver/mysql v1.10.1/go.mod h1:M+cqaI7+xxXGG9swrdeUIoPG3Y3KCkF0pZej+SK+nWk=
-github.com/jamf/go-mysqldump v0.8.1 h1:xw0keMzL0SFydzcxcHSyrjuUWo/ETc2axWsN7qrCYOE=
-github.com/jamf/go-mysqldump v0.8.1/go.mod h1:YWqhOv9PfioqsO59t/DziO8gFEHw8G2vV6qBlFCdHIM=
+github.com/jamf/go-mysqldump v0.8.2 h1:JdsDK7HS6ZpByIvYw9h1ibs2Bs3AzSLziEVdjv70HP0=
+github.com/jamf/go-mysqldump v0.8.2/go.mod h1:YWqhOv9PfioqsO59t/DziO8gFEHw8G2vV6qBlFCdHIM=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
