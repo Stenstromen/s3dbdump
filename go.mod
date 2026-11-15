@@ -6,7 +6,7 @@ go 1.26.0
 
 require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.14
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.6
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.9
 	github.com/go-sql-driver/mysql v1.10.1
 )
 
@@ -23,12 +23,12 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.39.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.44.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.7 // indirect
-	github.com/aws/smithy-go v1.28.8 // indirect
+	github.com/aws/smithy-go v1.28.9 // indirect
 )
 
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.47.6
+	github.com/aws/aws-sdk-go-v2 v1.48.0
 	github.com/aws/aws-sdk-go-v2/config v1.33.14
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.7
 	github.com/jamf/go-mysqldump v0.8.2
