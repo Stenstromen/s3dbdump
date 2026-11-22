@@ -6,7 +6,7 @@ go 1.26.0
 
 require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.14
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.6
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.9
 	github.com/go-sql-driver/mysql v1.10.1
 )
 
